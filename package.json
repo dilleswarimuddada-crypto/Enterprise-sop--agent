@@ -1,0 +1,25 @@
+{
+  "name": "enterprise-sop--agent",
+  "version": "1.0.0",
+  "description": "Enterprise SOP Agent Project Week 1",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dilleswarimuddada-crypto/Enterprise-sop--agent.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dilleswarimuddada-crypto/Enterprise-sop--agent/issues"
+  },
+  "homepage": "https://github.com/dilleswarimuddada-crypto/Enterprise-sop--agent#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
+  }
+}
