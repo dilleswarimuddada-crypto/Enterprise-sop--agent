@@ -1,84 +1,86 @@
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-const pdf = require("pdf-parse");
+const pdfParse = require("pdf-parse");
+const { MongoClient } = require("mongodb");
 
 const app = express();
 const PORT = 3000;
 
-/* allow html file */
-app.use(express.static(__dirname));
+/* allow html files to open */
+app.use(express.static("."));
 
-/* storage location */
-const storage = multer.diskStorage({
+/* MongoDB connection */
+const uri = "mongodb+srv://Dilleswarimuddada:Jimin13@cluster0.6cmgfwe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
-  destination: function (req, file, cb) {
-      cb(null, "uploads/");
-        },
+const client = new MongoClient(uri);
 
-          filename: function (req, file, cb) {
-              cb(null, file.originalname);
-                }
+/* upload folder setup */
+const upload = multer({
+    dest: "uploads/"
+    });
 
-                });
+    /* home route */
+    app.get("/", (req,res)=>{
+        res.send("Server working");
+        });
 
-                const upload = multer({ storage: storage });
+        /* upload route */
+        app.post("/upload", upload.single("pdf"), async (req, res) => {
 
-                /* test route */
-                app.get("/", (req, res) => {
+            try {
 
-                  res.send("Enterprise SOP Agent Server Running");
+                    const filePath = req.file.path;
 
-                  });
+                            const dataBuffer = fs.readFileSync(filePath);
 
-                  /* upload route + PDF reading + chunking */
-                  app.post("/upload", upload.single("file"), async (req, res) => {
+                                    const pdfData = await pdfParse(dataBuffer);
 
-                    try {
+                                            const text = pdfData.text;
 
-                        if (!req.file) {
-                              return res.send("No file uploaded");
-                                  }
+                                                    console.log("===== PDF TEXT SAMPLE =====");
 
-                                      const filePath = req.file.path;
+                                                            console.log(text.substring(0,300));
 
-                                          const dataBuffer = fs.readFileSync(filePath);
+                                                                    /* connect mongodb */
+                                                                            await client.connect();
 
-                                              const data = await pdf(dataBuffer);
+                                                                                    console.log("Connected to MongoDB");
 
-                                                  const text = data.text;
+                                                                                            const db = client.db("sop_database");
 
-                                                      const chunkSize = 500;
+                                                                                                    const collection = db.collection("documents");
 
-                                                          let chunks = [];
+                                                                                                            /* store data */
+                                                                                                                    await collection.insertOne({
 
-                                                              for (let i = 0; i < text.length; i += chunkSize) {
+                                                                                                                                filename: req.file.originalname,
 
-                                                                    chunks.push(text.substring(i, i + chunkSize));
+                                                                                                                                            content: text,
 
-                                                                        }
+                                                                                                                                                        createdAt: new Date()
 
-                                                                            console.log("===== TEXT CHUNKS =====");
+                                                                                                                                                                });
 
-                                                                                console.log(chunks);
+                                                                                                                                                                        console.log("Saved to MongoDB");
 
-                                                                                    res.send("PDF uploaded and text processed successfully");
+                                                                                                                                                                                res.send("PDF uploaded and stored in MongoDB");
 
-                                                                                      }
+                                                                                                                                                                                    }
 
-                                                                                        catch (error) {
+                                                                                                                                                                                        catch(error){
 
-                                                                                            console.log(error);
+                                                                                                                                                                                                console.log(error);
 
-                                                                                                res.send("Error reading PDF");
+                                                                                                                                                                                                        res.send("Error processing PDF");
 
-                                                                                                  }
+                                                                                                                                                                                                            }
 
-                                                                                                  });
+                                                                                                                                                                                                            });
 
-                                                                                                  /* start server */
-                                                                                                  app.listen(PORT, () => {
+                                                                                                                                                                                                            /* start server */
+                                                                                                                                                                                                            app.listen(PORT, ()=>{
 
-                                                                                                    console.log("server running on port 3000");
+                                                                                                                                                                                                                console.log(`Server running on http://localhost:${PORT}`);
 
-                                                                                                    });
+                                                                                                                                                                                                                });
