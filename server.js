@@ -1,107 +1,109 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
 const pdfParse = require("pdf-parse");
-const { MongoClient } = require("mongodb");
+const fs = require("fs");
 
 const app = express();
 const PORT = 3000;
 
-/* allow html page */
-app.use(express.static("."));
+app.use(express.json());
+app.use(express.static(__dirname));
 
-/* MongoDB connection */
-const uri = "mongodb+srv://Dilleswarimuddada:Jimin13@cluster0.6cmgfwe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+let pdfText = "";
 
-const client = new MongoClient(uri);
+/* upload setup */
+const storage = multer.diskStorage({
 
-/* multer upload folder */
-const upload = multer({
-    dest: "uploads/"
-    });
+destination: function(req,file,cb){
+cb(null,"uploads");
+},
 
-    /* home route */
-    app.get("/", (req,res)=>{
-        res.send("Server working");
-        });
+filename: function(req,file,cb){
+cb(null,file.originalname);
+}
 
-        /* function to split text into chunks */
-        function splitText(text, chunkSize = 1000, overlap = 200){
+});
 
-            let chunks = [];
+const upload = multer({storage:storage});
 
-                for(let i = 0; i < text.length; i += chunkSize - overlap){
 
-                        chunks.push(text.substring(i, i + chunkSize));
+/* upload PDF */
+app.post("/upload", upload.single("pdf"), async (req,res)=>{
 
-                            }
+try{
 
-                                return chunks;
-                                }
+const buffer = fs.readFileSync(req.file.path);
 
-                                /* upload route */
-                                app.post("/upload", upload.single("pdf"), async (req,res)=>{
+const data = await pdfParse(buffer);
 
-                                    try{
+pdfText = data.text.toLowerCase();
 
-                                            /* read pdf file */
-                                                    const filePath = req.file.path;
+console.log("PDF text loaded");
 
-                                                            const dataBuffer = fs.readFileSync(filePath);
+res.send("PDF uploaded successfully");
 
-                                                                    const pdfData = await pdfParse(dataBuffer);
+}
 
-                                                                            const text = pdfData.text;
+catch(error){
 
-                                                                                    console.log("PDF text extracted");
+console.log(error);
 
-                                                                                            /* split text */
-                                                                                                    const chunks = splitText(text);
+res.send("Upload error");
 
-                                                                                                            console.log("Number of chunks:", chunks.length);
+}
 
-                                                                                                                    /* connect mongodb */
-                                                                                                                            await client.connect();
+});
 
-                                                                                                                                    console.log("Connected to MongoDB");
 
-                                                                                                                                            const db = client.db("sop_database");
+/* ask question */
+app.post("/ask", (req,res)=>{
 
-                                                                                                                                                    const collection = db.collection("documents");
+const question = req.body.question.toLowerCase();
 
-                                                                                                                                                            /* store each chunk */
-                                                                                                                                                                    for(let chunk of chunks){
+const words = question.split(" ");
 
-                                                                                                                                                                                await collection.insertOne({
+const lines = pdfText.split("\n");
 
-                                                                                                                                                                                                filename: req.file.originalname,
+let matches = [];
 
-                                                                                                                                                                                                                content: chunk,
+for(let line of lines){
 
-                                                                                                                                                                                                                                createdAt: new Date()
+for(let word of words){
 
-                                                                                                                                                                                                                                            });
+if(line.includes(word)){
 
-                                                                                                                                                                                                                                                    }
+matches.push(line.trim());
 
-                                                                                                                                                                                                                                                            console.log("Chunks saved to MongoDB");
+break;
 
-                                                                                                                                                                                                                                                                    res.send("PDF uploaded and chunked successfully");
+}
 
-                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                            catch(error){
+}
 
-                                                                                                                                                                                                                                                                                    console.log(error);
+}
 
-                                                                                                                                                                                                                                                                                            res.send("Error processing PDF");
+matches = [...new Set(matches)];
 
-                                                                                                                                                                                                                                                                                                }
+matches = matches.slice(0,5);
 
-                                                                                                                                                                                                                                                                                                });
+if(matches.length===0){
 
-                                                                                                                                                                                                                                                                                                /* start server */
-                                                                                                                                                                                                                                                                                                app.listen(PORT, ()=>{
+return res.json({
+answer:"No result found"
+});
 
-                                                                                                                                                                                                                                                                                                    console.log(`Server running on http://localhost:${PORT}`);
+}
 
-                                                                                                                                                                                                                                                                                                    });
+res.json({
+answer: matches.join("\n")
+});
+
+});
+
+
+/* start server */
+app.listen(PORT, ()=>{
+
+console.log("Server running on http://localhost:3000");
+
+});
