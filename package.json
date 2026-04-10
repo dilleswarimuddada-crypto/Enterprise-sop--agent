@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/dilleswarimuddada-crypto/Enterprise-sop--agent#readme",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "mongodb": "^7.1.1",

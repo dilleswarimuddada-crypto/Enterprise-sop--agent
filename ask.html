@@ -2,94 +2,92 @@
 <html>
 
 <head>
+
 <title>SOP Assistant</title>
+
+<style>
+
+body{
+
+font-family: Arial;
+
+margin:40px;
+
+}
+
+input{
+
+width:300px;
+
+padding:10px;
+
+}
+
+button{
+
+background:#2d7ef7;
+
+color:white;
+
+border:none;
+
+padding:10px 20px;
+
+margin-left:10px;
+
+cursor:pointer;
+
+}
+
+#result{
+
+margin-top:20px;
+
+background:#f1f1f1;
+
+padding:15px;
+
+white-space:pre-line;
+
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h2>Upload SOP PDF</h2>
+<h2>Ask SOP Question</h2>
 
-<input type="file" id="pdfFile">
+<input id="question" placeholder="Enter question">
 
-<br><br>
+<button onclick="askQuestion()">Ask</button>
 
-<h2>Ask Question</h2>
-
-<input type="text" id="question" placeholder="Type keyword like salary">
-
-<button onclick="searchText()">Search</button>
-
-<pre id="result"></pre>
-
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+<div id="result"></div>
 
 <script>
 
-let fullText="";
+async function askQuestion(){
 
-document.getElementById("pdfFile").addEventListener("change", async function(){
+let question = document.getElementById("question").value;
 
-const file=this.files[0];
+let res = await fetch("/ask",{
 
-const reader=new FileReader();
+method:"POST",
 
-reader.onload=async function(){
+headers:{
 
-const typedarray=new Uint8Array(this.result);
+"Content-Type":"application/x-www-form-urlencoded"
 
-const pdf=await pdfjsLib.getDocument(typedarray).promise;
+},
 
-let text="";
-
-for(let i=1;i<=pdf.numPages;i++){
-
-const page=await pdf.getPage(i);
-
-const content=await page.getTextContent();
-
-text+=content.items.map(item=>item.str).join(" ");
-
-}
-
-fullText=text.toLowerCase();
-
-alert("PDF loaded successfully");
-
-};
-
-reader.readAsArrayBuffer(file);
+body:"question="+question
 
 });
 
+let data = await res.json();
 
-function searchText(){
-
-let question=document.getElementById("question").value.toLowerCase();
-
-let sentences=fullText.split(".");
-
-let matches=[];
-
-for(let s of sentences){
-
-if(s.includes(question)){
-
-matches.push(s.trim());
-
-}
-
-}
-
-if(matches.length==0){
-
-document.getElementById("result").innerText="No result found";
-
-return;
-
-}
-
-document.getElementById("result").innerText=matches.slice(0,5).join(". ");
+document.getElementById("result").innerText=data.answer;
 
 }
 
