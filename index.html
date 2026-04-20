@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>OpsMind AI</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6f8;
+padding:30px;
+}
+
+.container{
+max-width:750px;
+margin:auto;
+}
+
+.heading{
+text-align:center;
+font-size:28px;
+font-weight:bold;
+margin-bottom:20px;
+color:#2c3e50;
+}
+
+.box{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+#chatBox{
+height:220px;
+overflow-y:auto;
+border:1px solid #ddd;
+padding:15px;
+margin-top:10px;
+background:#fafafa;
+border-radius:8px;
+}
+
+.message{
+margin-bottom:15px;
+}
+
+.user{
+color:#2c3e50;
+font-weight:bold;
+}
+
+.bot{
+color:#27ae60;
+}
+
+input{
+padding:10px;
+width:70%;
+border:1px solid #ccc;
+border-radius:5px;
+}
+
+button{
+padding:10px 15px;
+background:#2c7be5;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1a5fd0;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="heading">
+OpsMind AI
+</div>
+
+
+<div class="box">
+
+<h3>Upload SOP PDF</h3>
+
+<input type="file" id="pdfFile">
+
+<br><br>
+
+<button onclick="uploadPDF()">Upload</button>
+
+<p id="uploadStatus"></p>
+
+</div>
+
+
+
+<div class="box">
+
+<h3>Ask Question</h3>
+
+<div id="chatBox"></div>
+
+<br>
+
+<input
+type="text"
+id="question"
+placeholder="Type your question"
+>
+
+<button onclick="askQuestion()">Ask</button>
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+async function uploadPDF(){
+
+let file=document.getElementById("pdfFile").files[0];
+
+let formData=new FormData();
+
+formData.append("pdf",file);
+
+let response=await fetch("/upload",{
+
+method:"POST",
+
+body:formData
+
+});
+
+let data=await response.json();
+
+document.getElementById("uploadStatus").innerText=data.message;
+
+}
+
+
+
+async function askQuestion(){
+
+let question=document.getElementById("question").value;
+
+let response=await fetch("/ask",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({question})
+
+});
+
+let data=await response.json();
+
+let chatBox=document.getElementById("chatBox");
+
+chatBox.innerHTML+=`
+
+<div class="message user">
+You: ${question}
+</div>
+
+<div class="message bot">
+Bot: ${data.answer}
+</div>
+
+`;
+
+}
+
+</script>
+
+
+</body>
+
+</html>
